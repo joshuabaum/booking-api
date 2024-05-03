@@ -8,7 +8,7 @@ import delete_reservation from "./delete_reservation";
 const router = express.Router();
 
 router.get("/", (req, res) => {
-    res.send("root api");
+  res.send("root api");
 });
 
 router.use("/create_reservation", create_reservation);
