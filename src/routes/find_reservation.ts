@@ -1,7 +1,10 @@
 import express from "express";
 import { Request, Response } from "express";
 import dbPool from "../database/database";
-import { executeQuery } from "../database/database_utils";
+import {
+  executeQuery,
+  getDateWithoutTimezoneOffset,
+} from "../database/database_utils";
 
 import { RowDataPacket, Connection, ResultSetHeader } from "mysql2";
 
@@ -20,7 +23,8 @@ type FindReservationRequestQuery = {
   time: string; // for simplicity assume this is sent in javaScript Date string format
 };
 
-// Example http://localhost:3000/api/v1/find_reservation/?user_ids=1,2,3,12&time=2022-05-20T12:00:00
+// Example http://localhost:3000/api/v1/find_reservation/?user_ids=1,2,3,4,5,9,10&time=2024-05-19T02:00:00
+// Assume user sends ISO format with 0 timezone offset. Should be sent back localized.
 router.get<FindReservationRequestQuery, FindReservationResponse>(
   "/",
   (req: Request, res: Response) => {
@@ -33,8 +37,8 @@ router.get<FindReservationRequestQuery, FindReservationResponse>(
     }
 
     const userIds: number[] = user_ids.split(",").map((item) => parseInt(item));
-    // Assume time is unix code
-    const timeDate: Date = new Date(parseInt(time));
+
+    const desiredTime: Date = getDateWithoutTimezoneOffset(time);
 
     dbPool.getConnection(async (err, connection) => {
       if (err) {
@@ -51,8 +55,21 @@ router.get<FindReservationRequestQuery, FindReservationResponse>(
         return;
       }
 
-      // TODO: query for all users current reservations and verify that given state time is valid
+      // Check if any users already have a booked reservation which overlaps which desired time.
+      // If yes return early.
+      const times: Date[] = await getUsersBookedReservationTimes(
+        connection,
+        userIds,
+      );
+      if (checkTimeOverlap(times, desiredTime)) {
+        res.send({
+          message:
+            "one or more users in group already has a reservation within 2 hours of desired time.",
+        });
+        return;
+      }
 
+      // We need to retrieve users' dietary restrictions to filter restaurants.
       const dietRestrictions: Set<string> = await getUserDietRestrictions(
         connection,
         userIds,
@@ -61,13 +78,68 @@ router.get<FindReservationRequestQuery, FindReservationResponse>(
       const response: FindReservationResponse[] = await getPossibleReservations(
         connection,
         [...dietRestrictions],
-        new Date(time),
+        desiredTime,
       );
       res.send(response);
       connection.release();
     });
   },
 );
+
+/** Returns true if there is an overlap between the bookedTimes and desiredReservationTime. */
+function checkTimeOverlap(
+  bookedTimes: Date[],
+  desiredReservationTime: Date,
+): boolean {
+  // Reservations last two hours.
+  // If the difference between any booked time and the desiredReservationTime is less than two hours then there is an overlap.
+  return (
+    bookedTimes.filter((time) => {
+      const timeDiffMs = time.getTime() - desiredReservationTime.getTime();
+      const hoursDifference = timeDiffMs / (1000 * 60 * 60);
+      return hoursDifference < 2;
+    }).length > 0
+  );
+}
+
+async function getUsersBookedReservationTimes(
+  db: Connection,
+  userIds: number[],
+): Promise<Date[]> {
+  const userIdFill = "?, ".repeat(userIds.length).slice(0, -2);
+  var query = `
+            SELECT
+                resy.start_time as start_time
+            FROM reservations AS resy
+            JOIN user_reservations_association AS assoc
+                ON assoc.reservation_id = resy.reservation_id
+            JOIN users as users
+                ON assoc.user_id = users.user_id
+                WHERE users.user_id in (${userIdFill})`;
+  try {
+    const rows: ResultSetHeader = await executeQuery(
+      db,
+      query,
+      "Error getting booked reservations times for users",
+      userIds,
+    );
+
+    const times: any[] = JSON.parse(JSON.stringify(rows));
+
+    // Use set in case there's repeated already booked times.
+    const start_times: Set<string> = new Set();
+    for (const val of times.values()) {
+      // Add raw time string to set. Convert to date late because otherwise they will all be different objects.
+      start_times.add(val.start_time);
+    }
+
+    return [...start_times].map((item) => getDateWithoutTimezoneOffset(item));
+  } catch (error) {
+    // Handle any errors that occur during the database query
+    console.error("Error getting booked reservations times for users: ", error);
+    throw error;
+  }
+}
 
 async function getPossibleReservations(
   db: Connection,
@@ -110,11 +182,7 @@ function createPossibleReservationQueryString(
   dietRestrictions: string[],
   start_time: Date,
 ): string {
-  const time: String = new Date(
-    start_time.getTime() - start_time.getTimezoneOffset() * 60000,
-  )
-    .toISOString()
-    .replace("T", " ");
+  const time: String = start_time.toISOString();
 
   // Query Summary:
   // 1. Join restaurants and reservations (ideally filter time before joining, but not done here for sake of time.)
@@ -131,7 +199,7 @@ function createPossibleReservationQueryString(
                             resy.start_time
                         FROM
                             restaurants rest
-                        INNER JOIN reservations resy ON rest.restaurant_id = resy.restaurant_id
+                        INNER JOIN reservations resy ON rest.restaurant_id = resy.restaurant_id 
                         WHERE ABS(TIMESTAMPDIFF(MINUTE, resy.start_time, CAST('${time}' AS DATETIME))) <= 15`;
 
   // Add a restriction for each dietery need. DietaryRestrictions queried from database do not need to worry about injection.

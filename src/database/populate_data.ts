@@ -174,15 +174,11 @@ async function populateReservations(db: Connection): Promise<void> {
     const tables: Table[] = getTables(row.name);
     for (var table of tables)
       for (var num_seat of table.num_seats) {
-        valuesToInsert.push([
-          row.id,
-          num_seat,
-          new Date(parseInt(table.time))
-            .toISOString()
-            .slice(0, 19)
-            .replace("T", " "),
-          true,
-        ]);
+        const time: String = new Date(parseInt(table.time))
+          .toISOString()
+          .slice(0, 19)
+          .replace("T", " ");
+        valuesToInsert.push([row.id, num_seat, time, true]);
       }
   }
 

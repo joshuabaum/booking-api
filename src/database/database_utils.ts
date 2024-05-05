@@ -1,3 +1,4 @@
+import { error } from "console";
 import { Connection, ResultSetHeader } from "mysql2";
 
 /**
@@ -36,4 +37,29 @@ export function executeQuery(
       });
     }
   });
+}
+
+/**
+ * Returns a date with the timezone offset removed.
+ * @param date
+ * @returns a new Date with timezone offset removed.
+ */
+export function getDateWithoutTimezoneOffset(date: Date | string): Date {
+  if (date instanceof Date) {
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  } else if (typeof date === "string") {
+    const tempDate = new Date(date);
+    return new Date(tempDate.getTime() - tempDate.getTimezoneOffset() * 60000);
+  } else {
+    throw error;
+  }
+}
+
+/**
+ * Returns the a string format of the provided date for comparison with DATETIME stored in database.
+ * @param date
+ * @returns string formatted for SQL datetime comparsion.
+ */
+export function getDateTimeForTable(date: Date): String {
+  return date.toISOString().slice(0, 19).replace("T", " ");
 }
