@@ -10,9 +10,7 @@
 
 ## Step 3: Install Node Dependecies & Typescript Annotations
 
-#### 3a. In the root directory of the project run `npm install`
-
-#### 3b. Unknown: if Typescript annotations are saved to package-lock..
+#### 3a. In the root directory of the project run `npm install`. Note 
 
 ## Step 4: Run the project
 
