@@ -23,66 +23,84 @@ type FindReservationRequestQuery = {
   time: string; // for simplicity assume this is sent in javaScript Date string format
 };
 
-// Example http://localhost:3000/api/v1/find_reservation/?user_ids=1,2,3,4,5,9,10&time=2024-05-19T02:00:00
+const errorTag = "FindReservationEndpoint Error:";
+
 // Assume user sends ISO format with 0 timezone offset. Should be sent back localized.
+
+/** GET endpoint used to find all reservations for a group of users at a desired time.
+ *
+ * <p> Endpoint assumes url params include a time string (in ISO 8601 format) and a list of user_ids.
+ * Responds with a list of all reservations which meet the user's time and dietary requirements.
+ *
+ * Examples
+ * http://localhost:3000/api/v1/find_reservation/?user_ids=1,2,3,4,5,9,10&time=2024-05-19T02:00:00
+ * http://localhost:3000/api/v1/find_reservation/?user_ids=18,2,10&time=2024-05-19T04:00:00
+ * http://localhost:3000/api/v1/find_reservation/?user_ids=11,12&time=2024-05-19T02:30:00
+ *
+ */
 router.get<FindReservationRequestQuery, FindReservationResponse>(
   "/",
   (req: Request, res: Response) => {
+    // Validate query params
     const { time, user_ids } = req.query as FindReservationRequestQuery;
     if (!req.query || !user_ids || !time) {
       const errMsg: string = "missing query parms for request";
-      res.status(404).send(errMsg);
-      console.log(errMsg);
+      res.status(400);
+      console.log(errorTag, errMsg);
       return;
     }
-
+    // Format params
     const userIds: number[] = user_ids.split(",").map((item) => parseInt(item));
-
     const desiredTime: Date = getDateWithoutTimezoneOffset(time);
 
-    dbPool.getConnection(async (err, connection) => {
-      if (err) {
-        // TODO figure out what the right error code is
-        res.status(400).send();
-        throw err;
-      }
+    try {
+      dbPool.getConnection(async (err, connection) => {
+        if (err) {
+          throw err;
+        }
 
-      const areUserIdsValid = await validateUserIds(connection, userIds);
-      if (!areUserIdsValid) {
-        const errMsg: string = "invalid user_id in request";
-        res.status(404).send(errMsg);
-        console.log(errMsg);
-        return;
-      }
+        const areUserIdsValid = await validateUserIds(connection, userIds);
+        if (!areUserIdsValid) {
+          const errMsg: string = "invalid user_id in request";
+          res.status(400).send(errMsg);
+          console.log(errMsg);
+          return;
+        }
 
-      // Check if any users already have a booked reservation which overlaps which desired time.
-      // If yes return early.
-      const times: Date[] = await getUsersBookedReservationTimes(
-        connection,
-        userIds,
-      );
-      if (checkTimeOverlap(times, desiredTime)) {
-        res.send({
-          message:
-            "one or more users in group already has a reservation within 2 hours of desired time.",
-        });
-        return;
-      }
+        // Check if any users already have a booked reservation which overlaps which desired time.
+        // If yes return early.
+        const times: Date[] = await getUsersBookedReservationTimes(
+          connection,
+          userIds,
+        );
+        if (checkTimeOverlap(times, desiredTime)) {
+          res.send({
+            message:
+              "one or more users in group already has a reservation within 2 hours of desired time.",
+          });
+          return;
+        }
 
-      // We need to retrieve users' dietary restrictions to filter restaurants.
-      const dietRestrictions: Set<string> = await getUserDietRestrictions(
-        connection,
-        userIds,
-      );
+        // We need to retrieve users' dietary restrictions to filter restaurants.
+        const dietRestrictions: Set<string> = await getUserDietRestrictions(
+          connection,
+          userIds,
+        );
 
-      const response: FindReservationResponse[] = await getPossibleReservations(
-        connection,
-        [...dietRestrictions],
-        desiredTime,
-      );
-      res.send(response);
-      connection.release();
-    });
+        const response: FindReservationResponse[] =
+          await getPossibleReservations(
+            connection,
+            [...dietRestrictions],
+            desiredTime,
+          );
+        res.send(response);
+        connection.release();
+      });
+    } catch (err) {
+      console.log(errorTag, err);
+      res.status(500).send();
+      return;
+    }
   },
 );
 
@@ -102,6 +120,8 @@ function checkTimeOverlap(
   );
 }
 
+/** Returns a list of all start times for reservations which are already booked for users with the provided userIds.
+ */
 async function getUsersBookedReservationTimes(
   db: Connection,
   userIds: number[],
@@ -116,78 +136,62 @@ async function getUsersBookedReservationTimes(
             JOIN users as users
                 ON assoc.user_id = users.user_id
                 WHERE users.user_id in (${userIdFill})`;
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Error getting booked reservations times for users",
-      userIds,
-    );
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Error getting booked reservations times for users",
+    userIds,
+  );
 
-    const times: any[] = JSON.parse(JSON.stringify(rows));
+  const times: any[] = JSON.parse(JSON.stringify(rows));
 
-    // Use set in case there's repeated already booked times.
-    const start_times: Set<string> = new Set();
-    for (const val of times.values()) {
-      // Add raw time string to set. Convert to date late because otherwise they will all be different objects.
-      start_times.add(val.start_time);
-    }
-
-    return [...start_times].map((item) => getDateWithoutTimezoneOffset(item));
-  } catch (error) {
-    // Handle any errors that occur during the database query
-    console.error("Error getting booked reservations times for users: ", error);
-    throw error;
+  // Use set in case there's repeated already booked times.
+  const start_times: Set<string> = new Set();
+  for (const val of times.values()) {
+    // Add raw time string to set. Convert to date late because otherwise they will all be different objects.
+    start_times.add(val.start_time);
   }
+
+  return [...start_times].map((item) => getDateWithoutTimezoneOffset(item));
 }
 
+/** Returns a list of reservations which meet the provided dietRestrictions and startTime.
+ *
+ * @param db database connection
+ * @param dietRestrictions diet restrictions for all users.
+ * @param startTime the desired start time for the reservation.
+ */
 async function getPossibleReservations(
   db: Connection,
   dietRestrictions: string[],
-  start_time: Date,
+  startTime: Date,
 ): Promise<any> {
-  // Query Summary:
-  // 1. Join restaurants and reservations (ideally filter time before joining, but not done here for sake of time.)
-  // 2. Filter by reservations which meet all dietary needs.s
-  // 3. Filter by start_time within 15 minutes of desired time. Note that time is validated against other user reservations before query.
-  var query = createPossibleReservationQueryString(
-    dietRestrictions,
-    start_time,
-  );
+  var query = createPossibleReservationQueryString(dietRestrictions, startTime);
 
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Error fetching possible reservations diet restrictions: ",
-    );
-    return rows;
-  } catch (error) {
-    // Handle any errors that occur during the database query
-    console.error(
-      "Error fetching possible reservations diet restrictions:",
-      error,
-    );
-    throw error;
-  }
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Error fetching possible reservations diet restrictions: ",
+  );
+  return rows;
 }
 
 /** Create a query string to filter out reservations which do not meet start time and dietary restrictions needed by the user.
  *
  * @param dietRestrictions list of dietary restrictions for the users.
- * @param start_time start time for the reservation.
+ * @param startTime start time for the reservation.
  * @return SQL query to find all reservations which match user need.
  */
 function createPossibleReservationQueryString(
   dietRestrictions: string[],
-  start_time: Date,
+  startTime: Date,
 ): string {
-  const time: String = start_time.toISOString();
+  const time: String = startTime.toISOString();
 
   // Query Summary:
   // 1. Join restaurants and reservations (ideally filter time before joining, but not done here for sake of time.)
   // 2. Filter by reservations which meet all dietary needs.s
-  // 3. Filter by start_time within 15 minutes of desired time. Note that time is validated against other user reservations before query.
+  // 3. Filter by startTime within 15 minutes of desired time. Note that time is validated against other user reservations before query.
   var query = `
                         SELECT
                             rest.restaurant_id,
@@ -234,31 +238,26 @@ async function getUserDietRestrictions(
         FROM users
         WHERE user_id IN (${placeholders})
     `;
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Failed To Retrieve User Dietary Restrictions: ",
-      userIds,
-    );
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Failed To Retrieve User Dietary Restrictions: ",
+    userIds,
+  );
 
-    // Extract diet_restrictions from the result and aggregate them into a set
-    const dietRestrictionsSet = new Set<string>();
-    for (const row of JSON.parse(JSON.stringify(rows)) as RowDataPacket[]) {
-      const dietRestrictions = row.diet_restrictions;
-      if (dietRestrictions) {
-        // Parse the JSON array of diet_restrictions and add them to the set
-        const restrictionsArray = dietRestrictions.split(",");
-        restrictionsArray.forEach((restriction: string) => {
-          dietRestrictionsSet.add(restriction);
-        });
-      }
+  // Extract diet_restrictions from the result and aggregate them into a set
+  const dietRestrictionsSet = new Set<string>();
+  for (const row of JSON.parse(JSON.stringify(rows)) as RowDataPacket[]) {
+    const dietRestrictions = row.diet_restrictions;
+    if (dietRestrictions) {
+      // Parse the JSON array of diet_restrictions and add them to the set
+      const restrictionsArray = dietRestrictions.split(",");
+      restrictionsArray.forEach((restriction: string) => {
+        dietRestrictionsSet.add(restriction);
+      });
     }
-    return dietRestrictionsSet;
-  } catch (error) {
-    console.error("Error fetching user diet restrictions:", error);
-    throw error;
   }
+  return dietRestrictionsSet;
 }
 
 /** Returns true if all provided userIds are associated with a user. */
@@ -275,19 +274,14 @@ async function validateUserIds(
           FROM users
           WHERE user_id IN (${placeholders})
       `;
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Failed To Validate User IDs: ",
-      userIds,
-    );
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Failed To Validate User IDs: ",
+    userIds,
+  );
 
-    return JSON.parse(JSON.stringify(rows))[0].count == userIds.length;
-  } catch (error) {
-    console.error("Error validating user diet restrictions:", error);
-    throw error;
-  }
+  return JSON.parse(JSON.stringify(rows))[0].count == userIds.length;
 }
 
 export default router;

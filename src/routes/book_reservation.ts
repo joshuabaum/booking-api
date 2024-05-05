@@ -5,56 +5,72 @@ import { executeQuery } from "../database/database_utils";
 
 const router = express.Router();
 
-type BookReservationResponse = {
-  status: string;
-};
-
 type BookReservationRequestBody = {
   reservation_id: number;
   user_ids: number[];
 };
 
-router.post<Request, BookReservationResponse>("/", (req, res) => {
-  const { reservation_id, user_ids } = req.body as BookReservationRequestBody;
+type BookReservationResponse = {
+  status: string;
+  message?: string;
+};
 
-  if (!reservation_id || !user_ids) {
-    const errMsg: string = "missing params in request body";
-    res.status(404).send({ status: "failed" });
-    console.log(errMsg);
-    return;
-  }
+const errorTag = "BookReservationEndpoint Error:";
 
-  dbPool.getConnection(async (err, connection) => {
-    if (err) {
-      res.status(400).send();
-      throw err;
-    }
-
-    const isAvailable = await isReservationAvailable(
-      connection,
-      reservation_id,
-    );
-    if (!isAvailable) {
-      res.send({
-        status: "Failed. Reservation already booked.",
-      });
+/** POST endpoint used to book a reservation for a group of users.
+ *
+ * <p> Endpoint assumes request body has a reservation_id and list of user_ids.
+ * Responds with JSON object with a status ("success", "failed") and an optional message.
+ */
+router.post<BookReservationRequestBody, BookReservationResponse>(
+  "/",
+  (req, res) => {
+    // Validate params first
+    const { reservation_id, user_ids } = req.body;
+    if (!reservation_id || !user_ids) {
+      const errMsg: string = "missing params in request body";
+      res.status(404).send({ status: "failed", message: errMsg });
+      console.log(errorTag, errMsg);
       return;
     }
 
-    await bookReservation(connection, reservation_id);
-    await createReservationUsersAssociation(
-      connection,
-      reservation_id,
-      user_ids,
-    );
+    try {
+      dbPool.getConnection(async (err, connection) => {
+        if (err) {
+          throw err;
+        }
 
-    res.send({
-      status: isAvailable ? "booking succesful!" : "booking failed :(",
-    });
+        const isAvailable = await isReservationAvailable(
+          connection,
+          reservation_id,
+        );
+        if (!isAvailable) {
+          res.send({
+            status: "failed",
+            message: "Reservation already booked.",
+          });
+          return;
+        }
 
-    connection.release();
-  });
-});
+        await markReservationBooked(connection, reservation_id);
+        await createReservationUsersAssociation(
+          connection,
+          reservation_id,
+          user_ids,
+        );
+
+        res.send({
+          status: "succesful",
+        });
+
+        connection.release();
+      });
+    } catch (err) {
+      console.log(errorTag, err);
+      res.status(500).send();
+    }
+  },
+);
 
 /**
  * Returns true if the reservation with the provded @param reservation_id is available.
@@ -67,31 +83,26 @@ async function isReservationAvailable(
   db: Connection,
   reservation_id: number,
 ): Promise<boolean> {
-  const query = `SELECT available as available
+  const query = `SELECT available
                 FROM 
                     reservations
                 WHERE 
                     reservation_id = ?`;
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Error fetching possible reservations diet restrictions: ",
-      reservation_id,
-    );
-    return JSON.parse(JSON.stringify(rows))[0].available;
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Error fetching possible reservations diet restrictions: ",
+    reservation_id,
+  );
+  return JSON.parse(JSON.stringify(rows))[0].available;
 }
 
-/** Books the reservation with the provided reservationId.
+/** Marked the reservation with the provided reservationId as booked (not available).
  *
  * @param db database connection
  * @param reservation_id id of the reservation being booked.
  */
-async function bookReservation(
+async function markReservationBooked(
   db: Connection,
   reservation_id: number,
 ): Promise<void> {
@@ -100,17 +111,12 @@ async function bookReservation(
         SET available = false
         WHERE reservation_id = ?;`;
 
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Error booking reservation: ",
-      [reservation_id],
-    );
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Error booking reservation: ",
+    [reservation_id],
+  );
 }
 
 /** Updates the users booked reservations with the provided reservationId.
@@ -128,17 +134,12 @@ async function createReservationUsersAssociation(
     "INSERT INTO user_reservations_association (user_id, reservation_id) VALUES ?";
   const valuesToInsert = user_ids.map((id) => [id, reservation_id]);
 
-  try {
-    await executeQuery(
-      db,
-      insertString,
-      "Error inserting user reservation assocation table: ",
-      [valuesToInsert],
-    );
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+  await executeQuery(
+    db,
+    insertString,
+    "Error inserting user reservation assocation table: ",
+    [valuesToInsert],
+  );
 }
 
 export default router;

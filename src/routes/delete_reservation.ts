@@ -10,41 +10,55 @@ type DeleteReservationRequestBody = {
 };
 type DeleteReservationResponse = {
   status: string;
+  message?: string;
 };
 
+const errorTag = "DeleteReservationEndpoint Error:";
+
+/** POST endpoint used to delete an already booked reservation for a group of users and mark it as available.
+ *
+ * <p> Endpoint assumes request body has a reservation_id.
+ * Responds with JSON object with a status ("success", "failed") and an optional message.
+ */
 router.post<DeleteReservationRequestBody, DeleteReservationResponse>(
   "/",
   (req, res) => {
-    const { reservation_id } = req.body as DeleteReservationRequestBody;
-
+    // Validate params first
+    const { reservation_id } = req.body;
     if (!reservation_id) {
       const errMsg: string = "missing params in request body";
-      res.status(404).send({ status: "failed" });
-      console.log(errMsg);
+      res.status(400).send({ status: "failed", message: errMsg });
+      console.log(errorTag, errMsg);
       return;
     }
 
-    dbPool.getConnection(async (err, connection) => {
-      if (err) {
-        res.status(400).send();
-        throw err;
-      }
+    try {
+      dbPool.getConnection(async (err, connection) => {
+        if (err) {
+          throw err;
+        }
 
-      await markReservationAvailable(connection, reservation_id);
-      await removeUserReservationAssociation(connection, reservation_id);
+        await markReservationAvailable(connection, reservation_id);
+        await removeUserReservationAssociation(connection, reservation_id);
 
-      res.send({
-        status: "succesfully deleted reservation!",
+        const responseData: DeleteReservationResponse = {
+          status: "success",
+          message: `succesfully deleted reservation ID ${reservation_id}`,
+        };
+        res.send(responseData);
+        connection.release();
       });
-      connection.release();
-    });
+    } catch (err) {
+      console.log(errorTag, err);
+      res.status(500).send();
+    }
   },
 );
 
 /** Marks the reservation with the provided reservationId as available.
  *
  * @param db database connection
- * @param reservation_id id of the booked reservation.
+ * @param reservation_id id of the booked reservation to be marked available.
  */
 async function markReservationAvailable(
   db: Connection,
@@ -55,17 +69,12 @@ async function markReservationAvailable(
           SET available = true
           WHERE reservation_id = ?;`;
 
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Error marking reservation available: ",
-      [reservation_id],
-    );
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Error marking reservation available: ",
+    [reservation_id],
+  );
 }
 
 /** Deletes the (user_id : reservation_id) assocation for the deleted reservations.
@@ -80,17 +89,11 @@ async function removeUserReservationAssociation(
   const query = ` DELETE FROM user_reservations_association
     WHERE reservation_id = ?;
     `;
-  try {
-    const rows: ResultSetHeader = await executeQuery(
-      db,
-      query,
-      "Error removing reservation from user: ",
-      [reservation_id],
-    );
-    console.log(rows);
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+  const rows: ResultSetHeader = await executeQuery(
+    db,
+    query,
+    "Error removing reservation from user: ",
+    [reservation_id],
+  );
 }
 export default router;
