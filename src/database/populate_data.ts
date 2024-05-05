@@ -88,7 +88,7 @@ function populateUsers(db: Connection): Promise<void> {
       db,
       insertString,
       "failed to insert records to users table: ",
-      valuesToInsert,
+      [valuesToInsert],
     )
       .then((res: ResultSetHeader) => {
         console.log("Added " + res.affectedRows + " records to users table");
@@ -117,7 +117,7 @@ function populateRestaurants(db: Connection): Promise<void> {
       db,
       insertString,
       "failed to insert records to restaurants table: ",
-      valuesToInsert,
+      [valuesToInsert],
     )
       .then((res: ResultSetHeader) => {
         console.log(
@@ -164,7 +164,10 @@ async function populateReservations(db: Connection): Promise<void> {
         valuesToInsert.push([
           row.id,
           num_seat,
-          new Date(parseInt(table.time) * 1000),
+          new Date(parseInt(table.time))
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " "),
           "{}",
         ]);
       }
@@ -178,7 +181,7 @@ async function populateReservations(db: Connection): Promise<void> {
       db,
       insertString,
       "failed to insert records to reservations table: ",
-      valuesToInsert,
+      [valuesToInsert],
     )
       .then((res: ResultSetHeader) => {
         console.log(

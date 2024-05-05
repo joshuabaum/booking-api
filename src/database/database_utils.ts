@@ -11,13 +11,13 @@ export function executeQuery(
   db: Connection,
   query: string,
   error: string,
-  query_args?: any[],
+  query_args?: any,
 ): Promise<ResultSetHeader> {
   return new Promise<ResultSetHeader>((resolve, reject) => {
     if (query_args) {
       db.query(
         query,
-        [query_args],
+        query_args,
         (err: Error | null, result: ResultSetHeader) => {
           if (err) {
             reject(error + err);

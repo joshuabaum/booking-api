@@ -1,20 +1,20 @@
 export default {
   data: [
     {
-      name: "Scott",
-      diet: ["Vegan", "Gluten Free"],
-    },
-    {
       name: "James",
-      diet: ["Paleo", "Gluten Free"],
-    },
-    {
-      name: "Jeffrey",
-      diet: ["Gluten Free"],
+      diet: ["Paleo"],
     },
     {
       name: "April",
       diet: ["Vegetarian"],
+    },
+    {
+      name: "Scott",
+      diet: ["Vegan", "Gluten Free"],
+    },
+    {
+      name: "Jeffrey",
+      diet: ["Gluten Free"],
     },
     {
       name: "Samantha",

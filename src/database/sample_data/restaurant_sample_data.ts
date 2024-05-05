@@ -7,19 +7,19 @@ export default {
       supported_diet: ["Vegan", "Gluten Free"],
       reservations: [
         {
-          time: "1716084000", // May 18, 2024 @ 7:00:00 pm
+          time: "1716084000000", // May 18, 2024 @ 7:00:00 pm PT
           num_seats: [2, 4, 4, 8],
         },
         {
-          time: "1716085800", // May 18, 2024 @ 7:30:00 pm
+          time: "1716085800000", // May 18, 2024 @ 7:30:00 pm PT
           num_seats: [2, 2, 4, 6, 8],
         },
         {
-          time: "1716091200", // May 18, 2024 @ 9:00:00 pm
+          time: "1716091200000", // May 18, 2024 @ 9:00:00 pm PT
           num_seats: [2, 4, 4, 8],
         },
         {
-          time: "1716093000", // May 18, 2024 @ 9:30:00 pm
+          time: "1716093000000", // May 18, 2024 @ 9:30:00 pm PT
           num_seats: [2, 2, 4, 6, 8],
         },
       ],
@@ -29,11 +29,11 @@ export default {
       supported_diet: ["Paleo", "Vegetarian"],
       reservations: [
         {
-          time: "1716082200", // May 18, 2024 @ 6:30:00 pm
+          time: "1716082200000", // May 18, 2024 @ 6:30:00 pm PT
           num_seats: [2, 2, 2, 4, 4],
         },
         {
-          time: "1716089400", // May 18, 2024 @ 8:30:00 pm
+          time: "1716089400000", // May 18, 2024 @ 8:30:00 pm PT
           num_seats: [2, 2, 2, 4, 4],
         },
       ],
@@ -43,19 +43,19 @@ export default {
       supported_diet: [],
       reservations: [
         {
-          time: "1716082200", // May 18, 2024 @ 6:30:00 pm
+          time: "1716082200000", // May 18, 2024 @ 6:30:00 pm PT
           num_seats: [2, 2, 4],
         },
         {
-          time: "1716084000", // May 18, 2024 @ 7:00:00 pm
+          time: "1716084000000", // May 18, 2024 @ 7:00:00 pm PT
           num_seats: [2, 4, 4, 8],
         },
         {
-          time: "1716089400", // May 18, 2024 @ 8:30:00 pm
+          time: "1716089400000", // May 18, 2024 @ 8:30:00 pm PT
           num_seats: [2, 2, 4],
         },
         {
-          time: "1716091200", // May 18, 2024 @ 9:00:00 pm
+          time: "1716091200000", // May 18, 2024 @ 9:00:00 pm PT
           num_seats: [2, 4, 4, 8],
         },
       ],
@@ -65,27 +65,27 @@ export default {
       supported_diet: ["Gluten Free", "Vegetarian", "Vegan", "Paleo"],
       reservations: [
         {
-          time: "1716082200", // May 18, 2024 @ 6:30:00 pm
+          time: "1716082200000", // May 18, 2024 @ 6:30:00 pm PT
           num_seats: [2, 4],
         },
         {
-          time: "1716084000", // May 18, 2024 @ 7:00:00 pm
+          time: "1716084000000", // May 18, 2024 @ 7:00:00 pm PT
           num_seats: [2, 2, 2, 4],
         },
         {
-          time: "1716085800", // May 18, 2024 @ 7:30:00 pm
+          time: "1716085800000", // May 18, 2024 @ 7:30:00 pm PT
           num_seats: [4, 4, 6, 6],
         },
         {
-          time: "1716089400", // May 18, 2024 @ 8:30:00 pm
+          time: "1716089400000", // May 18, 2024 @ 8:30:00 pm PT
           num_seats: [2, 4],
         },
         {
-          time: "1716091200", // May 18, 2024 @ 9:00:00 pm
+          time: "1716091200000", // May 18, 2024 @ 9:00:00 pm PT
           num_seats: [2, 2, 2, 4],
         },
         {
-          time: "1716093000", // May 18, 2024 @ 9:30:00 pm
+          time: "1716093000000", // May 18, 2024 @ 9:30:00 pm PT
           num_seats: [4, 4, 6, 6],
         },
       ],
@@ -95,11 +95,11 @@ export default {
       supported_diet: ["Paleo", "Gluten Free"],
       reservations: [
         {
-          time: "1716082200", // May 18, 2024 @ 6:30:00 pm
+          time: "1716082200000", // May 18, 2024 @ 6:30:00 pm PT
           num_seats: [4],
         },
         {
-          time: "1716089400", // May 18, 2024 @ 8:30:00 pm
+          time: "1716089400000", // May 18, 2024 @ 8:30:00 pm PT
           num_seats: [4],
         },
       ],
@@ -109,11 +109,11 @@ export default {
       supported_diet: [],
       reservations: [
         {
-          time: "1716082200", // May 18, 2024 @ 6:30:00 pm
+          time: "1716082200000", // May 18, 2024 @ 6:30:00 pm PT
           num_seats: [2, 2],
         },
         {
-          time: "1716089400", // May 18, 2024 @ 8:30:00 pm
+          time: "1716089400000", // May 18, 2024 @ 8:30:00 pm PT
           num_seats: [2, 2],
         },
       ],
@@ -123,27 +123,31 @@ export default {
       supported_diet: ["Gluten Free", "Vegetarian", "Vegan", "Paleo"],
       reservations: [
         {
-          time: "1716082200", // May 18, 2024 @ 6:30:00 pm
+          time: "1716082200000", // May 18, 2024 @ 6:30:00 pm PT
           num_seats: [2],
         },
         {
-          time: "1716084000", // May 18, 2024 @ 7:00:00 pm
+          time: "1716084000000", // May 18, 2024 @ 7:00:00 pm PT
           num_seats: [2],
         },
         {
-          time: "1716085800", // May 18, 2024 @ 7:30:00 pm
+          time: "1420072200000", // May 18, 2024 @ 7:15:00 pm PT
+          num_seats: [2],
+        },
+        {
+          time: "1716085800000", // May 18, 2024 @ 7:30:00 pm PT
           num_seats: [2, 4],
         },
         {
-          time: "1716089400", // May 18, 2024 @ 8:30:00 pm
+          time: "1716089400000", // May 18, 2024 @ 8:30:00 pm PT
           num_seats: [2, 4],
         },
         {
-          time: "1716091200", // May 18, 2024 @ 9:00:00 pm
+          time: "1716091200000", // May 18, 2024 @ 9:00:00 pm PT
           num_seats: [4],
         },
         {
-          time: "1716093000", // May 18, 2024 @ 9:30:00 pm
+          time: "1716093000000", // May 18, 2024 @ 9:30:00 pm PT
           num_seats: [4],
         },
       ],
@@ -153,19 +157,23 @@ export default {
       supported_diet: ["Paleo"],
       reservations: [
         {
-          time: "1716084000", // May 18, 2024 @ 7:00:00 pm
+          time: "1716084000000", // May 18, 2024 @ 7:00:00 pm PT
           num_seats: [2],
         },
         {
-          time: "1716085800", // May 18, 2024 @ 7:30:00 pm
+          time: "1716085800000", // May 18, 2024 @ 7:30:00 pm PT
           num_seats: [2],
         },
         {
-          time: "1716091200", // May 18, 2024 @ 9:00:00 pm
+          time: "1420072200000", // May 18, 2024 @ 7:15:00 pm PT
+          num_seats: [2],
+        },
+        {
+          time: "1716091200000", // May 18, 2024 @ 9:00:00 pm PT
           num_seats: [4],
         },
         {
-          time: "1716093000", // May 18, 2024 @ 9:30:00 pm
+          time: "1716093000000", // May 18, 2024 @ 9:30:00 pm PT
           num_seats: [4],
         },
       ],
