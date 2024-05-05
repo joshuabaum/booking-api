@@ -1,13 +1,11 @@
 import mysql from "mysql2";
-import { Connection } from "mysql2";
 import bluebird from "bluebird";
-import { User, Restaurant, Reservation } from "./datamodels";
+require("dotenv").config();
 
-// In real environemnt would use env variables to store sensitive data.
 var pool = mysql.createPool({
-  host: "127.0.0.1",
-  user: "root",
-  password: "test",
+  host: process.env.MY_SQL_HOST,
+  user: process.env.MY_SQL_USER,
+  password: process.env.MY_SQL_PASS,
   Promise: bluebird,
 });
 
