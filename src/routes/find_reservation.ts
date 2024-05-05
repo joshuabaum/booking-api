@@ -25,8 +25,6 @@ type FindReservationRequestQuery = {
 
 const errorTag = "FindReservationEndpoint Error:";
 
-// Assume user sends ISO format with 0 timezone offset. Should be sent back localized.
-
 /** GET endpoint used to find all reservations for a group of users at a desired time.
  *
  * <p> Endpoint assumes url params include a time string (in ISO 8601 format) and a list of user_ids.
