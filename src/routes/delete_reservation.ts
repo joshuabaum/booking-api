@@ -69,12 +69,9 @@ async function markReservationAvailable(
           SET available = true
           WHERE reservation_id = ?;`;
 
-  const rows: ResultSetHeader = await executeQuery(
-    db,
-    query,
-    "Error marking reservation available: ",
-    [reservation_id],
-  );
+  await executeQuery(db, query, "Error marking reservation available: ", [
+    reservation_id,
+  ]);
 }
 
 /** Deletes the (user_id : reservation_id) assocation for the deleted reservations.
@@ -89,11 +86,8 @@ async function removeUserReservationAssociation(
   const query = ` DELETE FROM user_reservations_association
     WHERE reservation_id = ?;
     `;
-  const rows: ResultSetHeader = await executeQuery(
-    db,
-    query,
-    "Error removing reservation from user: ",
-    [reservation_id],
-  );
+  await executeQuery(db, query, "Error removing reservation from user: ", [
+    reservation_id,
+  ]);
 }
 export default router;

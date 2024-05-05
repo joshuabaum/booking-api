@@ -5,10 +5,7 @@ import {
   executeQuery,
   getDateWithoutTimezoneOffset,
 } from "../database/database_utils";
-
 import { RowDataPacket, Connection, ResultSetHeader } from "mysql2";
-
-const router = express.Router();
 
 export type FindReservationResponse = {
   restaurant_name: string;
@@ -24,6 +21,7 @@ type FindReservationRequestQuery = {
 };
 
 const errorTag = "FindReservationEndpoint Error:";
+const router = express.Router();
 
 /** GET endpoint used to find all reservations for a group of users at a desired time.
  *
@@ -143,10 +141,10 @@ async function getUsersBookedReservationTimes(
 
   const times: any[] = JSON.parse(JSON.stringify(rows));
 
-  // Use set in case there's repeated already booked times.
+  // Use set in case there's repeated booked times.
   const start_times: Set<string> = new Set();
   for (const val of times.values()) {
-    // Add raw time string to set. Convert to date late because otherwise they will all be different objects.
+    // Add raw time string to set. Convert to date later because otherwise they will all be different Date objects regardless of time.
     start_times.add(val.start_time);
   }
 
@@ -188,7 +186,7 @@ function createPossibleReservationQueryString(
 
   // Query Summary:
   // 1. Join restaurants and reservations (ideally filter time before joining, but not done here for sake of time.)
-  // 2. Filter by reservations which meet all dietary needs.s
+  // 2. Filter by reservations which meet all dietary needs.
   // 3. Filter by startTime within 15 minutes of desired time. Note that time is validated against other user reservations before query.
   var query = `
                         SELECT

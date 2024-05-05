@@ -111,12 +111,9 @@ async function markReservationBooked(
         SET available = false
         WHERE reservation_id = ?;`;
 
-  const rows: ResultSetHeader = await executeQuery(
-    db,
-    query,
-    "Error booking reservation: ",
-    [reservation_id],
-  );
+  await executeQuery(db, query, "Error booking reservation: ", [
+    reservation_id,
+  ]);
 }
 
 /** Updates the users booked reservations with the provided reservationId.
