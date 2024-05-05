@@ -3,13 +3,7 @@ import { Request, Response } from "express";
 import dbPool from "../database/database";
 import { executeQuery } from "../database/database_utils";
 
-import {
-  QueryError,
-  RowDataPacket,
-  Connection,
-  Pool,
-  ResultSetHeader,
-} from "mysql2";
+import { RowDataPacket, Connection, ResultSetHeader } from "mysql2";
 
 const router = express.Router();
 
@@ -44,6 +38,8 @@ router.get<FindReservationRequestQuery, FindReservationResponse>(
 
     dbPool.getConnection(async (err, connection) => {
       if (err) {
+        // TODO figure out what the right error code is
+        res.status(400).send();
         throw err;
       }
 
@@ -138,7 +134,7 @@ function createPossibleReservationQueryString(
                         INNER JOIN reservations resy ON rest.restaurant_id = resy.restaurant_id
                         WHERE ABS(TIMESTAMPDIFF(MINUTE, resy.start_time, CAST('${time}' AS DATETIME))) <= 15`;
 
-  // Add a restriction for each dietery need.
+  // Add a restriction for each dietery need. DietaryRestrictions queried from database do not need to worry about injection.
   if (dietRestrictions.length > 0) {
     for (var i = 0; i < dietRestrictions.length; i++) {
       query += ` AND FIND_IN_SET("${dietRestrictions[0]}", rest.diet_support) > 0 `;

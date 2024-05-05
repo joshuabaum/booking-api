@@ -81,7 +81,7 @@ function populateUsers(db: Connection): Promise<void> {
     const valuesToInsert = users_data.data.map((user: any) => [
       user.name,
       user.diet.toString(),
-      "{}",
+      `{"data" : []}`,
     ]);
 
     executeQuery(
@@ -168,7 +168,7 @@ async function populateReservations(db: Connection): Promise<void> {
             .toISOString()
             .slice(0, 19)
             .replace("T", " "),
-          "{}",
+          `{"data": []}`,
         ]);
       }
   }
