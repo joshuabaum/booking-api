@@ -118,7 +118,7 @@ The `user_reservations_association` table stores an associations between each us
 
 ### Description
 
-This API endpoint is used to find all reservations for a one or more users at a desired time. It responds with a list of all reservations that meet the specified time and dietary requirements of all users.
+This API endpoint is used to find all reservations for a one or more users at a desired time. It responds with a list of all reservations that meet dietary requirements of all users and have a start time within 15 minutes of the provided time.
 
 ### URL GET /api/v1/find_reservation
 
