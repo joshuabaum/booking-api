@@ -24,6 +24,11 @@
 
 ### Table: users
 
+#### Description:
+
+The `users` table stores information about a user including name, dietary needs, etc.
+
+
 #### Columns:
 
 1. **user_id**:
@@ -48,6 +53,10 @@
 
 ### Table: restaurants
 
+#### Description:
+
+The `restaurants` table stores information about a restaurant including name, dietary support, etc.
+
 #### Columns:
 
 1. **restaurant_id**:
@@ -66,6 +75,11 @@
 
 ### Table: reservations
 
+#### Description:
+
+The `reservations` table stores information about a reservation including start time and the number of seats. Additinoally it kinks to restaurants table for further info on dietary support, etc.
+
+
 #### Columns:
 
 1. **reservation_id**:
@@ -77,6 +91,7 @@
 
    - Type: INT (foreign key)
    - Description: Identifier of the restaurant associated with the reservation. Maps to the Restaurants table.
+   - Foreign Key: References the `restaurant_id` column in the `restaurant` table.
 
 3. **num_seats**:
 
@@ -104,9 +119,11 @@ The `user_reservations_association` table stores an associations between each us
 
    - Type: INT (foreign key)
    - Description: Identifier of the reservation associated with the user.
+   - Foreign Key: References the `reservation_id` column in the `reservation` table.
+
 
 2. **user_id**:
-   - Type: INT
+   - Type: INT (foreign key)
    - Description: Identifier of the user associated with the reservation.
    - Foreign Key: References the `user_id` column in the `users` table.
 
