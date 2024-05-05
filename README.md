@@ -6,7 +6,7 @@
 
 #### 2a. For this project I used a mySql database. To run this on your local machine you will need to install mySql (https://dev.mysql.com/downloads/installer/) if you do not have it installed already.
 
-### 2b. Edit the .env file in the root directory of this project with the MySql host name, password, and port for your computer
+### 2b. Edit the .env file in the root directory of this project with the MySql user_name, password, and host for your computer
 
 ## Step 3: Install Node Dependecies & Typescript Annotations
 
