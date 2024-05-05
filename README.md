@@ -17,7 +17,7 @@
 ---
 
 
-## Database Schema Documentation
+# Database Schema Documentation
 
 ### Table: users
 
@@ -99,7 +99,7 @@ The `user_reservations_association` table stores an associations between each us
 ---
 
 
-## API Documentation
+# API Documentation
 
 ## Endpoint: Book Reservation
 
