@@ -171,8 +171,8 @@ This endpoint allows clients to book a reservation for a group of users by provi
 
 ```json
 {
-  "reservation_id": 123,
-  "user_ids": [456, 789, 1011]
+  "reservation_id": 12,
+  "user_ids": [1, 10, 5]
 }
 ```
 
@@ -197,7 +197,7 @@ This endpoint allows clients to book a reservation for a group of users by provi
 
 ```curl -X POST \
   -H "Content-Type: application/json" \
-  -d '{"reservation_id": 123, "user_ids": [456, 789, 1011]}' \
+  -d '{"reservation_id": 12, "user_ids": [1, 10, 5]}' \
   http://localhost:3000/api/v1/book_reservation
 ```
 
@@ -213,7 +213,7 @@ This endpoint allows clients to delete one of their already reservations to mark
 
 ```json
 {
-  "reservation_id": 123
+  "reservation_id": 12
 }
 ```
 
@@ -237,6 +237,6 @@ This endpoint allows clients to delete one of their already reservations to mark
 
 ```curl -X POST \
   -H "Content-Type: application/json" \
-  -d '{"reservation_id": 123}' \
+  -d '{"reservation_id": 12}' \
   http://localhost:3000/api/v1/delete_reservation
 ```
