@@ -1,8 +1,7 @@
 import express from "express";
 import dbPool from "../database/database";
-import { RowDataPacket, Connection, ResultSetHeader } from "mysql2";
+import { Connection, ResultSetHeader } from "mysql2";
 import { executeQuery } from "../database/database_utils";
-import { connect } from "http2";
 
 const router = express.Router();
 
@@ -42,8 +41,12 @@ router.post<Request, BookReservationResponse>("/", (req, res) => {
       return;
     }
 
-    await bookReservation(connection, reservation_id, user_ids);
-    await updateUsersWithReservation(connection, reservation_id, user_ids);
+    await bookReservation(connection, reservation_id);
+    await createReservationUsersAssociation(
+      connection,
+      reservation_id,
+      user_ids,
+    );
 
     res.send({
       status: isAvailable ? "booking succesful!" : "booking failed :(",
@@ -58,13 +61,13 @@ router.post<Request, BookReservationResponse>("/", (req, res) => {
  *
  * @param db
  * @param reservation_id
- * @returns
+ * @return boolean indicating whether or not reservation is available.
  */
 async function isReservationAvailable(
   db: Connection,
   reservation_id: number,
 ): Promise<boolean> {
-  const query = `SELECT user_ids as user_ids
+  const query = `SELECT available as available
                 FROM 
                     reservations
                 WHERE 
@@ -76,29 +79,25 @@ async function isReservationAvailable(
       "Error fetching possible reservations diet restrictions: ",
       reservation_id,
     );
+    return JSON.parse(JSON.stringify(rows))[0].available;
   } catch (error) {
     console.log(error);
     throw error;
   }
-  // If user_ids does not have data field then the reservation is available.
-  return JSON.parse(JSON.stringify(rows))[0].user_ids.data.length == 0;
 }
 
 /** Books the reservation with the provided reservationId.
  *
  * @param db database connection
  * @param reservation_id id of the reservation being booked.
- * @param user_ids id of the users booking the reservation.
  */
 async function bookReservation(
   db: Connection,
   reservation_id: number,
-  user_ids: number[],
 ): Promise<void> {
-  const userIdFillFields = "?, ".repeat(user_ids.length).slice(0, -2);
   const query = `
         UPDATE reservations
-        SET user_ids = '{"data" : [${userIdFillFields}]}'
+        SET available = false
         WHERE reservation_id = ?;`;
 
   try {
@@ -106,7 +105,7 @@ async function bookReservation(
       db,
       query,
       "Error booking reservation: ",
-      user_ids.concat([reservation_id]),
+      [reservation_id],
     );
   } catch (error) {
     console.log(error);
@@ -120,23 +119,21 @@ async function bookReservation(
  * @param reservation_id id of the reservation the users have booked.
  * @param user_ids id of the users who booked the reservation.
  */
-async function updateUsersWithReservation(
+async function createReservationUsersAssociation(
   db: Connection,
   reservation_id: number,
   user_ids: number[],
 ): Promise<void> {
-  const userIdFillFields = "?, ".repeat(user_ids.length).slice(0, -2);
-  const query = `
-        UPDATE users
-        SET reservation_ids = JSON_ARRAY_APPEND(reservation_ids, '$.data', ?)
-        WHERE user_id in (${userIdFillFields});`;
+  const insertString =
+    "INSERT INTO user_reservations_association (user_id, reservation_id) VALUES ?";
+  const valuesToInsert = user_ids.map((id) => [id, reservation_id]);
 
   try {
     await executeQuery(
       db,
-      query,
-      "Error updating users with reservation: ",
-      [reservation_id].concat(user_ids),
+      insertString,
+      "Error inserting user reservation assocation table: ",
+      [valuesToInsert],
     );
   } catch (error) {
     console.log(error);

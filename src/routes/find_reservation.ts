@@ -23,7 +23,7 @@ type FindReservationRequestQuery = {
 // Example http://localhost:3000/api/v1/find_reservation/?user_ids=1,2,3,12&time=2022-05-20T12:00:00
 router.get<FindReservationRequestQuery, FindReservationResponse>(
   "/",
-  (req: Request<{}, {}, {}, FindReservationRequestQuery>, res: Response) => {
+  (req: Request, res: Response) => {
     const { time, user_ids } = req.query as FindReservationRequestQuery;
     if (!req.query || !user_ids || !time) {
       const errMsg: string = "missing query parms for request";

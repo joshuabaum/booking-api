@@ -13,7 +13,7 @@ function createTables(db: Connection): Promise<void> {
   return new Promise<void>(async (resolve, reject) => {
     try {
       const create_users_table =
-        "CREATE TABLE IF NOT EXISTS users(user_id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), diet_restrictions SET('Vegan', 'Gluten Free', 'Vegetarian', 'Paleo'), reservation_ids JSON, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
+        "CREATE TABLE IF NOT EXISTS users(user_id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), diet_restrictions SET('Vegan', 'Gluten Free', 'Vegetarian', 'Paleo'), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
       await executeQuery(
         db,
         create_users_table,
@@ -22,11 +22,20 @@ function createTables(db: Connection): Promise<void> {
       console.log("Created users table.");
 
       const create_reservations_table =
-        "CREATE TABLE IF NOT EXISTS reservations(reservation_id INT AUTO_INCREMENT PRIMARY KEY, restaurant_id INT, num_seats INT, start_time TIMESTAMP, user_ids JSON, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
+        "CREATE TABLE IF NOT EXISTS reservations(reservation_id INT AUTO_INCREMENT PRIMARY KEY, restaurant_id INT, num_seats INT, start_time TIMESTAMP, available BOOLEAN, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
       await executeQuery(
         db,
         create_reservations_table,
         "failed to create reservations table: ",
+      );
+      console.log("Created reservations table.");
+
+      const create_user_reservations_association_table =
+        "CREATE TABLE IF NOT EXISTS user_reservations_association(reservation_id INT, user_id INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)";
+      await executeQuery(
+        db,
+        create_user_reservations_association_table,
+        "failed to create user reservations associations table: ",
       );
       console.log("Created reservations table.");
 
@@ -63,6 +72,12 @@ function clearTables(db: Connection): Promise<void> {
       console.log("cleared reservations table.");
       await executeQuery(
         db,
+        "TRUNCATE TABLE user_reservations_association",
+        "failed to truncate reservations table",
+      );
+      console.log("cleared user_reservations_association table.");
+      await executeQuery(
+        db,
         "TRUNCATE TABLE restaurants",
         "failed to truncate restaurants table",
       );
@@ -76,12 +91,10 @@ function clearTables(db: Connection): Promise<void> {
 
 function populateUsers(db: Connection): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    const insertString =
-      "INSERT INTO users (name, diet_restrictions, reservation_ids) VALUES ?";
+    const insertString = "INSERT INTO users (name, diet_restrictions) VALUES ?";
     const valuesToInsert = users_data.data.map((user: any) => [
       user.name,
       user.diet.toString(),
-      `{"data" : []}`,
     ]);
 
     executeQuery(
@@ -168,13 +181,13 @@ async function populateReservations(db: Connection): Promise<void> {
             .toISOString()
             .slice(0, 19)
             .replace("T", " "),
-          `{"data": []}`,
+          true,
         ]);
       }
   }
 
   const insertString =
-    "INSERT INTO reservations(restaurant_id, num_seats, start_time, user_ids) VALUES ?";
+    "INSERT INTO reservations(restaurant_id, num_seats, start_time, available) VALUES ?";
 
   return new Promise<void>((resolve, reject) => {
     executeQuery(

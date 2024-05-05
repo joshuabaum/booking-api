@@ -16,7 +16,7 @@ router.get<{}, GetDataResponse>("/users", (req, res) => {
     executeQuery(
       connection,
       "SELECT * FROM users",
-      "failer to retrieve all users",
+      "failed to retrieve all users",
     )
       .then((result) => {
         res.send(result);
@@ -36,7 +36,7 @@ router.get<{}, GetDataResponse>("/rest", (req, res) => {
     executeQuery(
       connection,
       "SELECT * FROM restaurants",
-      "failer to retrieve all restaurants",
+      "failed to retrieve all restaurants",
     )
       .then((result) => {
         res.send(result);
@@ -56,7 +56,27 @@ router.get<{}, GetDataResponse>("/resy", (req, res) => {
     executeQuery(
       connection,
       "SELECT * FROM reservations",
-      "failer to retrieve all reservations",
+      "failed to retrieve all reservations",
+    )
+      .then((result) => {
+        res.send(result);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.sendStatus(200);
+      });
+  });
+});
+
+router.get<{}, GetDataResponse>("/assoc", (req, res) => {
+  dbPool.getConnection(async (err, connection) => {
+    if (err) {
+      throw err;
+    }
+    executeQuery(
+      connection,
+      "SELECT * FROM user_reservations_association",
+      "failed to retrieve all user_reservations_association",
     )
       .then((result) => {
         res.send(result);
