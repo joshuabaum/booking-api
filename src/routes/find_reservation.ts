@@ -10,7 +10,7 @@ import { RowDataPacket, Connection, ResultSetHeader } from "mysql2";
 
 const router = express.Router();
 
-type FindReservationResponse = {
+export type FindReservationResponse = {
   restaurant_name: string;
   restaurant_id: string;
   start_time: Date;
@@ -43,7 +43,7 @@ router.get<FindReservationRequestQuery, FindReservationResponse>(
     const { time, user_ids } = req.query as FindReservationRequestQuery;
     if (!req.query || !user_ids || !time) {
       const errMsg: string = "missing query parms for request";
-      res.status(400);
+      res.status(400).send();
       console.log(errorTag, errMsg);
       return;
     }
@@ -91,7 +91,7 @@ router.get<FindReservationRequestQuery, FindReservationResponse>(
             [...dietRestrictions],
             desiredTime,
           );
-        res.send(response);
+        res.status(200).send(response);
         connection.release();
       });
     } catch (err) {
